@@ -26,9 +26,17 @@ export default function ModulosPage() {
     queryKey: ["modulos-erp-ordenados"],
     queryFn: async () => {
       if (!supabase) return [];
-      const { data, error } = await supabase.from("modulos_erp").select("*").order("ordem_modulo", { ascending: true });
-      if (error) console.error('[ModulosPage] Query error:', error);
-      return data || [];
+      try {
+        const { data, error } = await supabase.from("modulos_erp").select("id,nome_modulo,status,created_date,created_at,ordem_modulo,empresa_id");
+        if (error) {
+          console.error('[ModulosPage] Query error:', error);
+          return [];
+        }
+        return data || [];
+      } catch (err) {
+        console.error('[ModulosPage] Exception:', err);
+        return [];
+      }
     },
     enabled: !!supabase,
   });
