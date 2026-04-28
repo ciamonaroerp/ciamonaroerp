@@ -162,7 +162,7 @@ export default function Layout({ children, currentPageName }) {
     const carregarMenu = async () => {
       try {
         if (supabase) {
-          const { data } = await supabase.from('modulos_erp').select('*');
+          const { data } = await supabase.from('modulos_erp').select('*').order('ordem_modulo', { ascending: true });
           const itensOperacionais = (data || [])
             .filter(m => m.nome_modulo && m.status === 'Ativo')
             .map(m => ({
