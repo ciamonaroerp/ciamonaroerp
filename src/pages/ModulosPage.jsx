@@ -58,7 +58,7 @@ export default function ModulosPage() {
     setSalvandoOrdem(false);
     showSuccess({ title: "Ordem atualizada", description: "A ordem dos módulos foi atualizada com sucesso." });
     setOrdemAlterada(false);
-    qc.invalidateQueries(["modulos-erp"]);
+    qc.invalidateQueries({ queryKey: ["modulos-erp-ordenados"] });
   };
 
   const handleDragEnd = async (result) => {
@@ -100,7 +100,7 @@ export default function ModulosPage() {
       description: "Esta ação não poderá ser desfeita.",
       onConfirm: async () => {
         await modulosErpService.deletar(row.id);
-        qc.invalidateQueries(["modulos-erp-ordenados"]);
+        qc.invalidateQueries({ queryKey: ["modulos-erp-ordenados"] });
       },
     });
   };
@@ -124,8 +124,8 @@ export default function ModulosPage() {
         }
       }
       setOrdemAlterada(false);
-      qc.invalidateQueries(["modulos-erp-ordenados"]);
-      qc.invalidateQueries(["menu-completo"]);
+      qc.invalidateQueries({ queryKey: ["modulos-erp-ordenados"] });
+      qc.invalidateQueries({ queryKey: ["menu-completo"] });
       window.dispatchEvent(new Event("erp-menu-atualizado"));
       showSuccess({
         title: "Módulo salvo com sucesso",
