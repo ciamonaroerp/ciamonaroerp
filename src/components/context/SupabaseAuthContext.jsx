@@ -10,8 +10,12 @@ export function SupabaseAuthProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    let initialized = false;
 
     async function init() {
+      if (initialized) return;
+      initialized = true;
+
       try {
         if (!supabase) {
           console.warn('[SupabaseAuth] Cliente Supabase não inicializado. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
