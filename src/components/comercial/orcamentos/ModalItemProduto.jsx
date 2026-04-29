@@ -267,7 +267,7 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
   const { data: personalizacoes = [] } = useQuery({
     queryKey: ["orcamento-personalizacoes-v2", empresaId],
     queryFn: async () => {
-      const { data } = await supabase.from("config_personalizacoes").select("*").eq("empresa_id", empresaId).is("deleted_at", null);
+      const { data } = await supabase.from("config_personalizacao").select("*").eq("empresa_id", empresaId).is("deleted_at", null);
       return data || [];
     },
     enabled: !!empresaId,
@@ -363,9 +363,11 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     // Só aguarda acabamentos/itensAdicionais se o itemEdicao tem esses dados salvos
     const temAcabSalvos = Array.isArray(itemEdicao.acabamentos) && itemEdicao.acabamentos.length > 0;
     const temAdicSalvos = Array.isArray(itemEdicao.itens_adicionais) && itemEdicao.itens_adicionais.length > 0;
+    const temPersSalvos = Array.isArray(itemEdicao.personalizacoes) && itemEdicao.personalizacoes.length > 0;
     if (querysPendentes) { setLoadingEdicao(true); return; }
     if (temAcabSalvos && acabamentos.length === 0) { setLoadingEdicao(true); return; }
     if (temAdicSalvos && itensAdicionais.length === 0) { setLoadingEdicao(true); return; }
+    if (temPersSalvos && personalizacoes.length === 0) { setLoadingEdicao(true); return; }
 
 
 
