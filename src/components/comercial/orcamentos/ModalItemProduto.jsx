@@ -357,13 +357,15 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       return;
     }
 
-    // Aguarda pelo menos os produtos carregarem antes de restaurar
-    // (outros arrays podem estar vazios legitimamente se não há cadastros)
+    // Aguarda produtos + acabamentos + itensAdicionais carregarem antes de restaurar
+    // (useQuery pode ainda estar buscando os dados ao abrir o modal)
     const querysPendentes = empresaId && produtos.length === 0;
-    if (querysPendentes) {
-      setLoadingEdicao(true);
-      return;
-    }
+    // Só aguarda acabamentos/itensAdicionais se o itemEdicao tem esses dados salvos
+    const temAcabSalvos = Array.isArray(itemEdicao.acabamentos) && itemEdicao.acabamentos.length > 0;
+    const temAdicSalvos = Array.isArray(itemEdicao.itens_adicionais) && itemEdicao.itens_adicionais.length > 0;
+    if (querysPendentes) { setLoadingEdicao(true); return; }
+    if (temAcabSalvos && acabamentos.length === 0) { setLoadingEdicao(true); return; }
+    if (temAdicSalvos && itensAdicionais.length === 0) { setLoadingEdicao(true); return; }
 
 
 
@@ -372,9 +374,12 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     let idsAcab = [];
     let nomesAcab = [];
     if (acabSalvos.length > 0 && typeof acabSalvos[0] === 'object' && acabSalvos[0]?.id) {
-      // Formato JSONB novo
-      idsAcab = acabSalvos.map(a => a.id).filter(Boolean);
-      nomesAcab = acabSalvos.map(a => a.descricao || a.nome_acabamento).filter(Boolean);
+      // Formato JSONB: [{id, descricao}] — cruza com a lista de configs para garantir nomes corretos
+      acabSalvos.forEach(aSalvo => {
+        const cfg = acabamentos.find(a => String(a.id) === String(aSalvo.id));
+        const nome = cfg?.nome_acabamento || aSalvo.descricao || aSalvo.nome_acabamento;
+        if (nome) { idsAcab.push(aSalvo.id); nomesAcab.push(nome); }
+      });
     } else if (acabSalvos.length > 0 && typeof acabSalvos[0] === 'string' && acabamentos.length > 0) {
       // Formato legado: array de nomes
       idsAcab = acabamentos.filter(a => acabSalvos.includes(a.nome_acabamento)).map(a => a.id);
@@ -815,6 +820,10 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       artigo_nome: form.artigo_nome || null,
       cor_nome: form.nome_cor || form.cor_nome || null,
       resumo_linha_artigo_cor: resumoLinhaArtigoCor,
+      acabamentos: (form.acabamentos_ids || []).map(id => {
+        const cfg = acabamentos.find(a => String(a.id) === String(id));
+        return cfg ? { id: cfg.id, descricao: cfg.nome_acabamento } : { id };
+      }),
       acabamentos_ids: form.acabamentos_ids || [],
       personalizacoes_payload: (form.personalizacoes_ids || []).map(id => ({
         id,
