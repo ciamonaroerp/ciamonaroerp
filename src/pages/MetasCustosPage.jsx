@@ -529,7 +529,7 @@ function AbaCustosTerceiros({ empresa_id }) {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("metas_custos_terceiros").select("*").eq("empresa_id", empresa_id).is("deleted_at", null);
+    const { data } = await supabase.from("custos_terceiros").select("*").eq("empresa_id", empresa_id).is("deleted_at", null);
     setDados(data || []);
     setLoading(false);
   }, [empresa_id]);
@@ -542,7 +542,7 @@ function AbaCustosTerceiros({ empresa_id }) {
   const salvar = async () => {
     setSalvando(true);
     const payload = { empresa_id, descricao: form.descricao, valor: parseFloat(form.valor) || 0, categoria: form.categoria };
-    const { error } = form.id ? await supabase.from("metas_custos_terceiros").update(payload).eq("id", form.id) : await supabase.from("metas_custos_terceiros").insert(payload);
+    const { error } = form.id ? await supabase.from("custos_terceiros").update(payload).eq("id", form.id) : await supabase.from("custos_terceiros").insert(payload);
     setSalvando(false);
     if (!error) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
     else showError({ title: "Erro", description: error.message });
@@ -552,7 +552,7 @@ function AbaCustosTerceiros({ empresa_id }) {
     title: "Excluir custo de terceiro?",
     description: `"${row.descricao}" será removido.`,
     onConfirm: async () => {
-      const { error } = await supabase.from("metas_custos_terceiros").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+      const { error } = await supabase.from("custos_terceiros").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
       if (!error) { showSuccess({ title: "Removido!" }); carregar(); }
       else showError({ title: "Erro", description: error.message });
     }
