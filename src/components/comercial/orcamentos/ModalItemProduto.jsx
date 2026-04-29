@@ -859,7 +859,6 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       servico_percentual: isProdutoServico ? parseFloat(form.servico_percentual) : 0,
       valor_unitario: valorUnitario,
       subtotal: valorUnitario * quantidade,
-      observacoes: form.observacoes || null,
       orcamento_id: form.orcamento_id || null,
       grupo_ids: itemEdicao?._grupo ? itemEdicao._grupo.map(r => ({ id: r.id, indice: r.indice })) : null,
     };
