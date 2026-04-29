@@ -69,7 +69,19 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
         .eq("orcamento_id", idLocal)
         .order("sequencia");
       if (error) console.warn("[AbaConfig] Erro ao buscar itens:", error.message);
-      return data || [];
+      const parseJson = (v) => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v;
+        if (typeof v === "string") { try { return JSON.parse(v); } catch { return []; } }
+        return [];
+      };
+      return (data || []).map(item => ({
+        ...item,
+        acabamentos: parseJson(item.acabamentos),
+        personalizacoes: parseJson(item.personalizacoes),
+        itens_adicionais: parseJson(item.itens_adicionais),
+        operacoes: parseJson(item.operacoes),
+      }));
     },
     enabled: !!idLocal,
     staleTime: 0,
