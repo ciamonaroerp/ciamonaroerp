@@ -84,7 +84,7 @@ export default function CRMPage() {
     try {
       let query = supabase
         .from('crm_oportunidades')
-        .select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade,telefone_cliente')
+        .select('id,titulo,valor,etapa_id,status,responsavel_nome,responsavel_id,created_at,cliente_nome,artigo_nome,cor_nome,quantidade')
         .eq('empresa_id', empresa_id)
         .gte('created_at', dataLimite.toISOString())
         .order('created_at', { ascending: false })
