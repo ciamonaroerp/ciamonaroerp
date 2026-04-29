@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/components/lib/supabaseClient";
-import { base44 } from "@/api/base44Client";
 import { useEmpresa } from "@/components/context/EmpresaContext";
 import { useGlobalAlert } from "@/components/GlobalAlertDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,9 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Plus, Pencil, Trash2, Target, DollarSign, TrendingUp, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-async function apiCustos(action, empresa_id, payload = {}) {
-  const res = await base44.functions.invoke("metasCustosOperacionais", { action, empresa_id, ...payload });
-  return res.data;
+// Calcula percentual_rateado e percentual_total localmente
+// fator = (totalDiretos + totalIndiretos) / totalDiretos
+// direto: rateado = pct * (fator - 1), total = pct * fator
+// indireto: rateado = 0, total = pct
+function calcularRateio(rows) {
+  const totalDireto = rows.filter(r => r.tipo === "direto").reduce((s, r) => s + (r.percentual || 0), 0);
+  const totalIndireto = rows.filter(r => r.tipo === "indireto").reduce((s, r) => s + (r.percentual || 0), 0);
+  const fator = totalDireto > 0 ? (totalDireto + totalIndireto) / totalDireto : 1;
+  return rows.map(r => {
+    if (r.tipo === "direto") {
+      return { ...r, percentual_rateado: r.percentual * (fator - 1), percentual_total: r.percentual * fator };
+    }
+    return { ...r, percentual_rateado: 0, percentual_total: r.percentual };
+  });
 }
 
 const CATEGORIAS_TERCEIROS = [
@@ -235,13 +245,27 @@ function AbaCustosFixos({ empresa_id }) {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const res = await apiCustos("listar_custos_fixos", empresa_id);
-    if (res?.success) {
-      setDados(res.data || []);
-      setTotais(res.totais || {});
-    } else {
-      showError({ title: "Erro ao carregar", description: res?.error || "Erro desconhecido" });
-    }
+    const { data, error } = await supabase
+      .from("custos_fixos")
+      .select("*, centros_custo(descricao)")
+      .eq("empresa_id", empresa_id)
+      .is("deleted_at", null)
+      .order("tipo", { ascending: false })
+      .order("descricao");
+
+    if (error) { showError({ title: "Erro ao carregar", description: error.message }); setLoading(false); return; }
+
+    const rows = (data || []).map(r => ({
+      ...r,
+      centro_custo_descricao: r.centros_custo?.descricao || null,
+    }));
+
+    const comRateio = calcularRateio(rows);
+    setDados(comRateio);
+
+    const totalDireto = rows.filter(r => r.tipo === "direto").reduce((s, r) => s + (r.percentual || 0), 0);
+    const totalIndireto = rows.filter(r => r.tipo === "indireto").reduce((s, r) => s + (r.percentual || 0), 0);
+    setTotais({ total_direto: totalDireto, total_indireto: totalIndireto });
     setLoading(false);
   }, [empresa_id]);
 
@@ -252,21 +276,22 @@ function AbaCustosFixos({ empresa_id }) {
 
   const salvar = async () => {
     setSalvando(true);
-    const res = await apiCustos("salvar_custo_fixo", empresa_id, {
-      id: form.id || undefined, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0, tipo: form.tipo, centro_custo_id: form.centro_custo_id || null
-    });
+    const payload = { empresa_id, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0, tipo: form.tipo, centro_custo_id: form.centro_custo_id || null };
+    const { error } = form.id
+      ? await supabase.from("custos_fixos").update(payload).eq("id", form.id)
+      : await supabase.from("custos_fixos").insert(payload);
     setSalvando(false);
-    if (res?.success) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
-    else showError({ title: "Erro", description: res?.error || "Erro ao salvar" });
+    if (!error) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
+    else showError({ title: "Erro", description: error.message });
   };
 
   const deletar = (row) => showConfirm({
     title: "Excluir custo fixo?",
     description: `"${row.descricao}" será removido.`,
     onConfirm: async () => {
-      const res = await apiCustos("deletar_custo_fixo", empresa_id, { id: row.id });
-      if (res?.success) { showSuccess({ title: "Removido!" }); carregar(); }
-      else showError({ title: "Erro", description: res?.error || "Erro ao remover" });
+      const { error } = await supabase.from("custos_fixos").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+      if (!error) { showSuccess({ title: "Removido!" }); carregar(); }
+      else showError({ title: "Erro", description: error.message });
     }
   });
 
@@ -279,7 +304,7 @@ function AbaCustosFixos({ empresa_id }) {
         loading={loading}
         onNovo={abrirNovo}
         onEditar={abrirEditar}
-        onDeletar={null}
+        onDeletar={deletar}
         renderTotais={(t) => (
           <div className="grid grid-cols-2 gap-4">
             <KpiCard label="Total Direto" value={fmtPct(t.total_direto)} icon={TrendingUp} color="green" />
