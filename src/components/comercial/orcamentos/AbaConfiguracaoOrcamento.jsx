@@ -94,7 +94,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
   const subtotalGeral = itensValidos.reduce((s, i) => s + (parseFloat(i.subtotal) || 0), 0);
 
   // Campos que existem apenas no payload do frontend — não são colunas da tabela
-  const CAMPOS_FRONTEND = ["acabamentos_ids", "personalizacoes_ids", "personalizacoes_payload", "itens_adicionais_ids", "grupo_ids", "resumo_linha_artigo_cor"];
+  const CAMPOS_FRONTEND = ["acabamentos_ids", "personalizacoes_ids", "personalizacoes_payload", "itens_adicionais_ids", "grupo_ids", "resumo_linha_artigo_cor", "nome_cor", "nome_linha_comercial"];
 
   const sanitizarPayload = (payload) => {
     const limpo = { ...payload };

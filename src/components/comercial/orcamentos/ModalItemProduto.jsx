@@ -811,9 +811,9 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
       produto_id: form.produto_id,
       nome_produto: form.nome_produto,
       codigo_unico: codigoUnicoFinal,
-      nome_linha_comercial: form.nome_linha_comercial || null,
+      linha_nome: form.nome_linha_comercial || form.linha_nome || null,
       artigo_nome: form.artigo_nome || null,
-      nome_cor: form.nome_cor || null,
+      cor_nome: form.nome_cor || form.cor_nome || null,
       resumo_linha_artigo_cor: resumoLinhaArtigoCor,
       acabamentos_ids: form.acabamentos_ids || [],
       personalizacoes_payload: (form.personalizacoes_ids || []).map(id => ({
