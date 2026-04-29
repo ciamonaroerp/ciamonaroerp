@@ -155,26 +155,62 @@ export default function Layout({ children, currentPageName }) {
     }
   }, []);
 
-  // Carrega módulos operacionais via Supabase direto
+  // Carrega módulos e suas páginas configuradas via Supabase
   useEffect(() => {
     if (!supabaseReady) return;
 
     const carregarMenu = async () => {
       try {
         if (supabase) {
-          const { data } = await supabase.from('modulos_erp').select('*').order('ordem_modulo', { ascending: true });
-          const itensOperacionais = (data || [])
-            .filter(m => m.nome_modulo && m.status === 'Ativo')
-            .map(m => ({
-              name: m.nome_modulo,
-              page: MODULO_PAGE_MAP[m.nome_modulo] || m.nome_modulo.replace(/\s+/g, "") + "Page",
-              icon: Layers,
-              modulo: m.nome_modulo,
-            }));
+          // Busca módulos ativos ordenados
+          const { data: modulos } = await supabase
+            .from('modulos_erp')
+            .select('id,nome_modulo,status,empresa_id')
+            .eq('status', 'Ativo')
+            .order('ordem_modulo', { ascending: true });
+
+          // Busca páginas vinculadas a todos os módulos ativos
+          const modulosAtivos = (modulos || []).filter(m => m.nome_modulo);
+          let paginasPorModulo = {};
+
+          if (modulosAtivos.length > 0) {
+            // Pega empresa_id do primeiro módulo (todos devem ser da mesma empresa)
+            const empresa_id = modulosAtivos[0]?.empresa_id;
+            if (empresa_id) {
+              const { data: paginas } = await supabase
+                .from('modulo_paginas')
+                .select('modulo_nome,pagina_nome,label_menu,ordem')
+                .eq('empresa_id', empresa_id)
+                .order('ordem', { ascending: true });
+
+              (paginas || []).forEach(p => {
+                if (!paginasPorModulo[p.modulo_nome]) paginasPorModulo[p.modulo_nome] = [];
+                // Deduplica
+                if (!paginasPorModulo[p.modulo_nome].some(x => x.pagina_nome === p.pagina_nome)) {
+                  paginasPorModulo[p.modulo_nome].push(p);
+                }
+              });
+            }
+          }
+
+          // Monta seções dinâmicas: cada módulo vira uma seção com suas páginas como itens
+          const secoesDinamicas = modulosAtivos.map(m => {
+            const paginas = paginasPorModulo[m.nome_modulo] || [];
+            const items = paginas.length > 0
+              ? paginas.map(p => ({
+                  name: p.label_menu || p.pagina_nome,
+                  page: p.pagina_nome,
+                  icon: Layers,
+                  modulo: m.nome_modulo,
+                }))
+              : []; // módulo sem páginas configuradas aparece sem itens
+
+            return { label: m.nome_modulo, items, isModulo: true };
+          }).filter(s => s.items.length > 0);
 
           const sections = [
             STATIC_SECTIONS[0],
-            ...(itensOperacionais.length > 0 ? [{ label: "Operacional", items: itensOperacionais }] : []),
+            ...secoesDinamicas,
             ...STATIC_SECTIONS.slice(1),
           ];
           setMenuSections(sections);
@@ -304,7 +340,14 @@ export default function Layout({ children, currentPageName }) {
             `}</style>
             {menuSections.map((section, sIdx) => {
               let itensFiltrados = [];
-              if (section.label === "Principal" || section.label === "Cadastros" || section.label === "Engenharia de Produto") {
+              if (section.isModulo) {
+                // Seção dinâmica de módulo: verifica acesso ao módulo e exibe todas as páginas
+                if (!temAcesso(section.label, "modulo")) {
+                  itensFiltrados = [];
+                } else {
+                  itensFiltrados = section.items;
+                }
+              } else if (section.label === "Principal" || section.label === "Cadastros" || section.label === "Engenharia de Produto") {
                 itensFiltrados = section.items.filter(item => temAcesso(item.name, "cadastro"));
               } else if (section.label === "Sistema") {
                 itensFiltrados = section.items.filter(item => temAcesso(item.name, "sistema"));
