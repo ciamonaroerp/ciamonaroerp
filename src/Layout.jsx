@@ -33,45 +33,17 @@ import { ErpHeader } from "@/components/design-system";
 import SystemVersion from "@/components/system/SystemVersion";
 
 
-// Seções fixas que não são módulos configuráveis
-const SECTION_PRINCIPAL = {
-  label: "Principal",
-  items: [
-    { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
-    { name: "Deploy Manager", page: "DeployManager", icon: Rocket },
-  ],
-};
+// Links fixos sempre visíveis no topo (fora dos módulos)
+const LINKS_FIXOS_TOPO = [
+  { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
+  { name: "Módulos do ERP", page: "ModulosPage", icon: Boxes },
+];
 
-const SECTION_ERP = {
-  label: "ERP",
-  items: [
-    { name: "Módulos do ERP", page: "ModulosPage", icon: Boxes },
-    { name: "Fiscal", page: "FiscalPage", icon: ScrollText },
-    { name: "Histórico de Preços", page: "HistoricoPrecosPage", icon: BarChart3 },
-  ],
-};
-
-const SECTION_CADASTROS = {
-  label: "Cadastros",
-  items: [
-    { name: "Usuários", page: "Usuarios", icon: Users },
-    { name: "Informações", page: "InformacoesPage", icon: ScrollText },
-    { name: "Clientes", page: "ClientesPage", icon: Building2 },
-    { name: "Transportadoras", page: "Transportadoras", icon: Building2 },
-    { name: "Modalidade de Frete", page: "ModalidadeFrete", icon: Package },
-    { name: "Fornecedores", page: "FornecedoresPage", icon: Building2 },
-  ],
-};
-
-const SECTION_SISTEMA = {
-  label: "Sistema",
-  items: [
-    { name: "Configurações da Empresa", page: "EmpresasConfigPage", icon: Settings },
-    { name: "Integrações", page: "IntegracoesERP", icon: Zap },
-    { name: "Logs de Auditoria", page: "LogsAuditoria", icon: ScrollText },
-    { name: "Logs do Sistema", page: "SistemaLogsPage", icon: AlertCircle },
-  ],
-};
+// Links fixos de admin no rodapé da nav
+const LINKS_FIXOS_ADMIN = [
+  { name: "Usuários", page: "Usuarios", icon: Users },
+  { name: "Configurações da Empresa", page: "EmpresasConfigPage", icon: Settings },
+];
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -172,25 +144,16 @@ export default function Layout({ children, currentPageName }) {
             })
             .filter(Boolean);
 
-          const sections = [
-            SECTION_PRINCIPAL,
-            SECTION_ERP,
-            ...secoesDinamicas,
-            SECTION_CADASTROS,
-            SECTION_SISTEMA,
-          ];
-          setMenuSections(sections);
-          setExpandedSections(sections.map(() => false));
+          setMenuSections(secoesDinamicas);
+          setExpandedSections(secoesDinamicas.map(() => false));
         } else {
-          const fallback = [SECTION_PRINCIPAL, SECTION_ERP, SECTION_CADASTROS, SECTION_SISTEMA];
-          setMenuSections(fallback);
-          setExpandedSections(fallback.map(() => false));
+          setMenuSections([]);
+          setExpandedSections([]);
         }
       } catch (err) {
-        console.warn('[Layout] Erro ao carregar menu, usando estático:', err.message);
-        const fallback = [SECTION_PRINCIPAL, SECTION_ERP, SECTION_CADASTROS, SECTION_SISTEMA];
-        setMenuSections(fallback);
-        setExpandedSections(fallback.map(() => false));
+        console.warn('[Layout] Erro ao carregar módulos:', err.message);
+        setMenuSections([]);
+        setExpandedSections([]);
       } finally {
         setMenuCarregado(true);
       }
@@ -292,73 +255,111 @@ export default function Layout({ children, currentPageName }) {
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1" style={{ background: '#3B5CCC', visibility: menuCarregado ? 'visible' : 'hidden' }}>
-            <style>{`
-              .menu-section-content {
-                overflow: hidden;
-                transition: all 0.25s ease-in-out;
-              }
-              .menu-section-content[data-expanded="true"] {
-                opacity: 1;
-              }
-              .menu-section-content[data-expanded="false"] {
-                opacity: 0;
-                max-height: 0;
-              }
-            `}</style>
-            {menuSections.map((section, sIdx) => {
-              let itensFiltrados = [];
-              if (section.isModulo) {
-                // Seção dinâmica de módulo: verifica acesso ao módulo e exibe todas as páginas
-                if (!temAcesso(section.label, "modulo")) {
-                  itensFiltrados = [];
-                } else {
-                  itensFiltrados = section.items;
-                }
-              } else if (section.label === "Principal" || section.label === "ERP") {
-                itensFiltrados = section.items; // sempre visível
-              } else if (section.label === "Cadastros") {
-                itensFiltrados = section.items.filter(item => temAcesso(item.name, "cadastro"));
-              } else if (section.label === "Sistema") {
-                itensFiltrados = section.items.filter(item => temAcesso(item.name, "sistema"));
-              } else {
-                itensFiltrados = section.items;
-              }
-              if (itensFiltrados.length === 0) return null;
-              return (
-                <div key={section.label} className="mb-1">
-                  <button
-                    onClick={() => toggleSection(sIdx)}
-                    className="flex items-center justify-between w-full px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-blue-100/60 hover:text-white transition-colors duration-200"
+          <nav className="flex-1 overflow-y-auto py-3 px-3" style={{ background: '#3B5CCC' }}>
+            {/* Links fixos no topo */}
+            <div className="space-y-0.5 mb-4">
+              {LINKS_FIXOS_TOPO.map(item => {
+                const isActive = currentPageName === item.page;
+                return (
+                  <Link
+                    key={item.page}
+                    to={createPageUrl(item.page)}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                      isActive ? "bg-white/20 text-white" : "text-blue-100/80 hover:bg-white/10 hover:text-white"
+                    )}
                   >
-                    {section.label}
-                    <ChevronRight className={cn("h-3 w-3 transition-transform duration-250", expandedSections[sIdx] && "rotate-90")} />
-                  </button>
-                  <div className="menu-section-content" data-expanded={expandedSections[sIdx]}>
-                    <div className="space-y-0.5">
-                      {itensFiltrados.map(item => {
-                         const isActive = currentPageName === item.page;
-                         return (
-                           <Link
-                             key={item.page}
-                             to={createPageUrl(item.page)}
-                             onClick={() => setSidebarOpen(false)}
-                             className={cn(
-                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                               isActive ? "bg-white/20 text-white" : "text-blue-100/80 hover:bg-white/10 hover:text-white"
-                             )}
-                           >
-                             <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "text-white" : "text-blue-200/60")} />
-                             <span className="truncate">{item.name}</span>
-                             {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
-                           </Link>
-                         );
-                       })}
+                    <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "text-white" : "text-blue-200/60")} />
+                    <span className="truncate">{item.name}</span>
+                    {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Separador */}
+            <div className="border-t border-white/10 mb-3" />
+
+            {/* Módulos dinâmicos com acordeão */}
+            {menuCarregado ? (
+              <div className="space-y-0.5">
+                {menuSections.map((section, sIdx) => {
+                  const itensFiltrados = isAdmin ? section.items : section.items.filter(() => temAcesso(section.label, "modulo"));
+                  if (itensFiltrados.length === 0) return null;
+                  const expanded = expandedSections[sIdx] ?? false;
+                  return (
+                    <div key={section.label}>
+                      <button
+                        onClick={() => toggleSection(sIdx)}
+                        className={cn(
+                          "flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                          expanded ? "bg-white/10 text-white" : "text-blue-100/80 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Layers className={cn("h-[17px] w-[17px] shrink-0", expanded ? "text-white" : "text-blue-200/60")} />
+                          <span className="truncate">{section.label}</span>
+                        </div>
+                        <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", expanded && "rotate-90")} />
+                      </button>
+                      {expanded && (
+                        <div className="mt-0.5 ml-3 pl-3 border-l border-white/20 space-y-0.5">
+                          {itensFiltrados.map(item => {
+                            const isActive = currentPageName === item.page;
+                            return (
+                              <Link
+                                key={item.page}
+                                to={createPageUrl(item.page)}
+                                onClick={() => setSidebarOpen(false)}
+                                className={cn(
+                                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200",
+                                  isActive ? "bg-white/20 text-white font-medium" : "text-blue-100/70 hover:bg-white/10 hover:text-white"
+                                )}
+                              >
+                                <span className="truncate">{item.name}</span>
+                                {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
+
+            {/* Separador + links admin */}
+            {isAdmin && (
+              <>
+                <div className="border-t border-white/10 mt-3 mb-3" />
+                <div className="space-y-0.5">
+                  {LINKS_FIXOS_ADMIN.map(item => {
+                    const isActive = currentPageName === item.page;
+                    return (
+                      <Link
+                        key={item.page}
+                        to={createPageUrl(item.page)}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                          isActive ? "bg-white/20 text-white" : "text-blue-100/80 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "text-white" : "text-blue-200/60")} />
+                        <span className="truncate">{item.name}</span>
+                        {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
+                      </Link>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </>
+            )}
           </nav>
 
           <div className="px-5 py-3 border-t border-white/10 shrink-0" style={{ background: '#3B5CCC' }}>
