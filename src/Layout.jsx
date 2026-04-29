@@ -119,20 +119,24 @@ export default function Layout({ children, currentPageName }) {
     const carregarMenu = async () => {
       try {
         if (supabase) {
-          // Busca módulos ativos ordenados
+          // Busca TODOS os módulos cadastrados, ordenados por ordem_modulo
           const { data: modulos } = await supabase
             .from('modulos_erp')
-            .select('id,nome_modulo,status,empresa_id')
-            .eq('status', 'Ativo')
+            .select('id,nome_modulo,empresa_id')
             .order('ordem_modulo', { ascending: true });
 
-          // Busca páginas vinculadas a todos os módulos ativos
-          const modulosAtivos = (modulos || []).filter(m => m.nome_modulo);
+          // Deduplica por nome_modulo (caso haja duplicatas no banco)
+          const vistos = new Set();
+          const modulosUnicos = (modulos || []).filter(m => {
+            if (!m.nome_modulo || vistos.has(m.nome_modulo)) return false;
+            vistos.add(m.nome_modulo);
+            return true;
+          });
+
           let paginasPorModulo = {};
 
-          if (modulosAtivos.length > 0) {
-            // Pega empresa_id do primeiro módulo (todos devem ser da mesma empresa)
-            const empresa_id = modulosAtivos[0]?.empresa_id;
+          if (modulosUnicos.length > 0) {
+            const empresa_id = modulosUnicos[0]?.empresa_id;
             if (empresa_id) {
               const { data: paginas } = await supabase
                 .from('modulo_paginas')
@@ -142,7 +146,7 @@ export default function Layout({ children, currentPageName }) {
 
               (paginas || []).forEach(p => {
                 if (!paginasPorModulo[p.modulo_nome]) paginasPorModulo[p.modulo_nome] = [];
-                // Deduplica
+                // Deduplica por pagina_nome dentro do mesmo módulo
                 if (!paginasPorModulo[p.modulo_nome].some(x => x.pagina_nome === p.pagina_nome)) {
                   paginasPorModulo[p.modulo_nome].push(p);
                 }
@@ -150,20 +154,23 @@ export default function Layout({ children, currentPageName }) {
             }
           }
 
-          // Monta seções dinâmicas: cada módulo vira uma seção com suas páginas como itens
-          const secoesDinamicas = modulosAtivos.map(m => {
-            const paginas = paginasPorModulo[m.nome_modulo] || [];
-            const items = paginas.length > 0
-              ? paginas.map(p => ({
+          // Monta seções: apenas módulos que têm páginas vinculadas aparecem no menu
+          const secoesDinamicas = modulosUnicos
+            .map(m => {
+              const paginas = paginasPorModulo[m.nome_modulo] || [];
+              if (paginas.length === 0) return null;
+              return {
+                label: m.nome_modulo,
+                isModulo: true,
+                items: paginas.map(p => ({
                   name: p.label_menu || p.pagina_nome,
                   page: p.pagina_nome,
                   icon: Layers,
                   modulo: m.nome_modulo,
-                }))
-              : []; // módulo sem páginas configuradas aparece sem itens
-
-            return { label: m.nome_modulo, items, isModulo: true };
-          }).filter(s => s.items.length > 0);
+                })),
+              };
+            })
+            .filter(Boolean);
 
           const sections = [
             SECTION_PRINCIPAL,
