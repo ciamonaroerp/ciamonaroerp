@@ -425,7 +425,7 @@ function AbaInfoFinanceiras({ empresa_id }) {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("metas_info_financeiras").select("*").eq("empresa_id", empresa_id).is("deleted_at", null);
+    const { data } = await supabase.from("informacoes_financeiras").select("*").eq("empresa_id", empresa_id).is("deleted_at", null);
     setDados(data || []);
     const totalDireto = (data || []).filter(r => r.tipo === 'direto').reduce((s, r) => s + (r.percentual || 0), 0);
     const totalIndireto = (data || []).filter(r => r.tipo === 'indireto').reduce((s, r) => s + (r.percentual || 0), 0);
@@ -441,7 +441,7 @@ function AbaInfoFinanceiras({ empresa_id }) {
   const salvar = async () => {
     setSalvando(true);
     const payload = { empresa_id, descricao: form.descricao, percentual: parseFloat(form.percentual) || 0, tipo: form.tipo, opcao: form.opcao || null };
-    const { error } = form.id ? await supabase.from("metas_info_financeiras").update(payload).eq("id", form.id) : await supabase.from("metas_info_financeiras").insert(payload);
+    const { error } = form.id ? await supabase.from("informacoes_financeiras").update(payload).eq("id", form.id) : await supabase.from("informacoes_financeiras").insert(payload);
     setSalvando(false);
     if (!error) { showSuccess({ title: "Salvo!" }); setModalOpen(false); carregar(); }
     else showError({ title: "Erro", description: error.message });
@@ -451,7 +451,7 @@ function AbaInfoFinanceiras({ empresa_id }) {
     title: "Excluir informação?",
     description: `"${row.descricao}" será removida.`,
     onConfirm: async () => {
-      const { error } = await supabase.from("metas_info_financeiras").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+      const { error } = await supabase.from("informacoes_financeiras").update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
       if (!error) { showSuccess({ title: "Removido!" }); carregar(); }
       else showError({ title: "Erro", description: error.message });
     }
