@@ -33,17 +33,7 @@ import { ErpHeader } from "@/components/design-system";
 import SystemVersion from "@/components/system/SystemVersion";
 
 
-// Links fixos sempre visíveis no topo (fora dos módulos)
-const LINKS_FIXOS_TOPO = [
-  { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
-  { name: "Módulos do ERP", page: "ModulosPage", icon: Boxes },
-];
 
-// Links fixos de admin no rodapé da nav
-const LINKS_FIXOS_ADMIN = [
-  { name: "Usuários", page: "Usuarios", icon: Users },
-  { name: "Configurações da Empresa", page: "EmpresasConfigPage", icon: Settings },
-];
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -256,32 +246,6 @@ export default function Layout({ children, currentPageName }) {
           </div>
 
           <nav className="flex-1 overflow-y-auto py-3 px-3" style={{ background: '#3B5CCC' }}>
-            {/* Links fixos no topo */}
-            <div className="space-y-0.5 mb-4">
-              {LINKS_FIXOS_TOPO.map(item => {
-                const isActive = currentPageName === item.page;
-                return (
-                  <Link
-                    key={item.page}
-                    to={createPageUrl(item.page)}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                      isActive ? "bg-white/20 text-white" : "text-blue-100/80 hover:bg-white/10 hover:text-white"
-                    )}
-                  >
-                    <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "text-white" : "text-blue-200/60")} />
-                    <span className="truncate">{item.name}</span>
-                    {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Separador */}
-            <div className="border-t border-white/10 mb-3" />
-
-            {/* Módulos dinâmicos com acordeão */}
             {menuCarregado ? (
               <div className="space-y-0.5">
                 {menuSections.map((section, sIdx) => {
@@ -332,33 +296,6 @@ export default function Layout({ children, currentPageName }) {
               <div className="flex items-center justify-center py-8">
                 <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               </div>
-            )}
-
-            {/* Separador + links admin */}
-            {isAdmin && (
-              <>
-                <div className="border-t border-white/10 mt-3 mb-3" />
-                <div className="space-y-0.5">
-                  {LINKS_FIXOS_ADMIN.map(item => {
-                    const isActive = currentPageName === item.page;
-                    return (
-                      <Link
-                        key={item.page}
-                        to={createPageUrl(item.page)}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                          isActive ? "bg-white/20 text-white" : "text-blue-100/80 hover:bg-white/10 hover:text-white"
-                        )}
-                      >
-                        <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "text-white" : "text-blue-200/60")} />
-                        <span className="truncate">{item.name}</span>
-                        {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0" />}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </>
             )}
           </nav>
 
