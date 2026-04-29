@@ -73,7 +73,13 @@ export default function OrcamentoModal({ open, onClose, editingId, empresaId, us
   const { data: empresas = [] } = useQuery({
     queryKey: ["empresas-config"],
     queryFn: async () => {
-      const { data } = await supabase.from("empresas_config").select("*").is("deleted_at", null).order("created_at");
+      const { data, error } = await supabase
+        .from("empresas_config")
+        .select("id, razao_social, cnpj")
+        .is("deleted_at", null)
+        .neq("status", "Inativo")
+        .order("razao_social");
+      if (error) console.warn("[OrcamentoModal] empresas_config erro:", error.message);
       return data || [];
     },
   });

@@ -49,23 +49,15 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [idLocal, setIdLocal] = useState(orcamentoId || null);
 
-  // Sincroniza orcamentoId → idLocal e invalida cache
-  useEffect(() => {
-    if (orcamentoId) {
-      setIdLocal(orcamentoId);
-      qc.invalidateQueries(["orcamento-itens"]);
-    }
-  }, [orcamentoId, qc]);
 
-  // Garante que o orçamento existe antes de listar itens
+
+  // Sincroniza prop orcamentoId → idLocal (cobre caso de edição onde prop chega depois)
   useEffect(() => {
-    if (!idLocal && garantirOrcamentoId) {
-      garantirOrcamentoId().then(id => {
-        setIdLocal(id);
-        qc.invalidateQueries(["orcamento-itens"]);
-      }).catch(err => console.error('[AbaConfiguracaoOrcamento] Erro ao garantir orçamento:', err));
+    if (orcamentoId && orcamentoId !== idLocal) {
+      setIdLocal(orcamentoId);
+      qc.invalidateQueries(["orcamento-itens", orcamentoId]);
     }
-  }, []);
+  }, [orcamentoId]);
 
   const { data: itens = [], isLoading, refetch } = useQuery({
     queryKey: ["orcamento-itens", idLocal],
