@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/components/lib/supabaseClient';
 import { useGlobalAlert } from '@/components/GlobalAlertDialog';
@@ -32,8 +32,8 @@ export default function CRMDetalhePage() {
   const [novaTarefa, setNovaTarefa] = useState({ titulo: '', tipo: 'Ligação', data_execucao: '' });
   const [showTarefaForm, setShowTarefaForm] = useState(false);
 
-  const carregar = async () => {
-    if (!oportunidadeId) return;
+  const carregar = useCallback(async () => {
+    if (!oportunidadeId || !empresa_id) return;
     setLoading(true);
     try {
       const [opRes, histRes, tarefasRes, motivosRes] = await Promise.all([
@@ -51,9 +51,9 @@ export default function CRMDetalhePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [oportunidadeId, empresa_id]);
 
-  useEffect(() => { if (empresa_id) carregar(); }, [oportunidadeId, empresa_id]);
+  useEffect(() => { carregar(); }, [carregar]);
 
   const marcarGanho = () => {
     showConfirm({
