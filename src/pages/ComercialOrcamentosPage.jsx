@@ -148,7 +148,7 @@ export default function ComercialOrcamentosPage() {
   };
 
   const buscarDadosCompletos = async (orcamento) => {
-    const { data: itensData } = await supabase.from("com_orcamento_itens").select("*").eq("orcamento_id", orcamento.id).order("created_at");
+    const { data: itensData } = await supabase.from("orcamento_itens").select("*").eq("orcamento_id", orcamento.id).order("created_at");
     const itens = itensData || [];
     const extra = {
       desconto: parseFloat(orcamento.desconto_pagamento) || 0,

@@ -59,16 +59,21 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
     }
   }, [orcamentoId]);
 
-  const { data: itens = [], isLoading, refetch } = useQuery({
+  const { data: itens = [], isLoading } = useQuery({
     queryKey: ["orcamento-itens", idLocal],
     queryFn: async () => {
       if (!idLocal) return [];
-      const { data } = await supabase.from("com_orcamento_itens").select("*").eq("orcamento_id", idLocal).order("sequencia");
+      const { data, error } = await supabase
+        .from("orcamento_itens")
+        .select("*")
+        .eq("orcamento_id", idLocal)
+        .order("sequencia");
+      if (error) console.warn("[AbaConfig] Erro ao buscar itens:", error.message);
       return data || [];
     },
     enabled: !!idLocal,
-    staleTime: 30_000,
-    retry: 1,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const itensValidos = itens.filter(i => i != null);
@@ -87,11 +92,11 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       if (!id) throw new Error("Orçamento não identificado");
 
       if (editId) {
-        const { data, error } = await supabase.from("com_orcamento_itens").update({ ...payload, orcamento_id: id }).eq("id", editId).select().single();
+        const { data, error } = await supabase.from("orcamento_itens").update({ ...payload, orcamento_id: id }).eq("id", editId).select().single();
         if (error) throw new Error(error.message);
         return { data: { data: data } };
       }
-      const { data, error } = await supabase.from("com_orcamento_itens").insert({ ...payload, orcamento_id: id, empresa_id: empresaId }).select().single();
+      const { data, error } = await supabase.from("orcamento_itens").insert({ ...payload, orcamento_id: id, empresa_id: empresaId }).select().single();
       if (error) throw new Error(error.message);
       return { data: { data: [data] } };
     },
@@ -112,7 +117,7 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
       // Para produtos compostos, exclui todos os registros do grupo
       const grupo = target._grupo || [target];
       const ids = grupo.map(r => r.id);
-      const { error } = await supabase.from("com_orcamento_itens").delete().in("id", ids);
+      const { error } = await supabase.from("orcamento_itens").delete().in("id", ids);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {

@@ -110,7 +110,7 @@ export default function AbaPagamentoOrcamento({ orcamentoId, empresaId, onRegist
   const { data: itens = [] } = useQuery({
     queryKey: ["orcamento-itens", orcamentoId],
     queryFn: async () => {
-      const { data } = await supabase.from("com_orcamento_itens").select("*").eq("orcamento_id", orcamentoId).order("sequencia");
+      const { data } = await supabase.from("orcamento_itens").select("*").eq("orcamento_id", orcamentoId).order("sequencia");
       return data || [];
     },
     enabled: !!orcamentoId,
@@ -259,7 +259,7 @@ export default function AbaPagamentoOrcamento({ orcamentoId, empresaId, onRegist
       // Salva logística em paralelo
       if (onBeforeSave) await onBeforeSave(idFinal);
 
-      const { data: itensAtuais } = await supabase.from("com_orcamento_itens").select("id").eq("orcamento_id", idFinal).limit(1);
+      const { data: itensAtuais } = await supabase.from("orcamento_itens").select("id").eq("orcamento_id", idFinal).limit(1);
       const temItens = Array.isArray(itensAtuais) && itensAtuais.length > 0;
       const statusFinal = temItens ? "pronto" : "em_elaboracao";
       const { data: res, error } = await supabase.from("com_orcamentos").update({ ...buildPayload(), status: statusFinal }).eq("id", idFinal).select().single();
