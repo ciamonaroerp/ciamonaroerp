@@ -26,7 +26,7 @@ export default function HistoricoPrecosPage() {
     queryFn: async () => {
       let q = supabase.from('historico_precos_produto_erp').select('*');
       if (empresa_id) q = q.eq('empresa_id', empresa_id);
-      const { data } = await q.order('created_at', { ascending: false });
+      const { data } = await q.order('data_emissao', { ascending: false });
       return data || [];
     },
     enabled: true,
@@ -46,7 +46,7 @@ export default function HistoricoPrecosPage() {
 
     // Ordenar cada grupo por data (mais antigos primeiro)
     Object.values(grouped).forEach(arr => {
-      arr.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      arr.sort((a, b) => new Date(a.data_emissao) - new Date(b.data_emissao));
     });
 
     // Calcular variação
@@ -91,12 +91,12 @@ export default function HistoricoPrecosPage() {
       const matchFornecedor = !selectedFornecedor || item.fornecedor_nome === selectedFornecedor;
 
       const matchData = (!dataInicio && !dataFim) || (
-        (!dataInicio || new Date(item.created_date) >= new Date(dataInicio)) &&
-        (!dataFim || new Date(item.created_date) <= new Date(dataFim))
+        (!dataInicio || new Date(item.data_emissao) >= new Date(dataInicio)) &&
+        (!dataFim || new Date(item.data_emissao) <= new Date(dataFim))
       );
 
       return matchSearch && matchFornecedor && matchData;
-    }).sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    }).sort((a, b) => new Date(b.data_emissao) - new Date(a.data_emissao));
   }, [dataComVariacao, searchText, selectedFornecedor, dataInicio, dataFim]);
 
   // Paginação
@@ -117,7 +117,7 @@ export default function HistoricoPrecosPage() {
       item.fornecedor_nome || '',
       item.descricao_base || '',
       item.descricao_complementar || '',
-      item.created_date ? new Date(item.created_date).toLocaleDateString('pt-BR') : '',
+      item.data_emissao ? new Date(item.data_emissao).toLocaleDateString('pt-BR') : '',
       item.valor_unitario?.toFixed(2) || '',
       item.percentual || '',
     ]);
@@ -240,7 +240,7 @@ export default function HistoricoPrecosPage() {
                       <TableCell className="py-1.5 text-slate-700 text-[11px] max-w-[180px] truncate whitespace-nowrap" title={item.descricao_base}>{item.descricao_base || '-'}</TableCell>
                       <TableCell className="py-1.5 text-slate-700 text-[11px] max-w-[180px] truncate whitespace-nowrap" title={item.descricao_complementar}>{item.descricao_complementar || '-'}</TableCell>
                       <TableCell className="py-1.5 text-slate-700 text-[11px] whitespace-nowrap">
-                        {item.created_date ? new Date(item.created_date).toLocaleDateString('pt-BR') : '-'}
+                        {item.data_emissao ? new Date(item.data_emissao).toLocaleDateString('pt-BR') : '-'}
                       </TableCell>
                       <TableCell className="py-1.5 text-right font-mono text-[11px] whitespace-nowrap">
                         {item.valor_unitario != null ? `R$ ${Number(item.valor_unitario).toFixed(2)}` : '-'}
