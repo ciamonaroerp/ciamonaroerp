@@ -389,19 +389,27 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
     }
 
     // --- Personalizações ---
-    const persJsonb = Array.isArray(itemEdicao.personalizacoes) ? itemEdicao.personalizacoes : [];
+    // JSONB salvo: [{id, descricao, cores, posicoes, valor}]
+    const persJsonb = Array.isArray(itemEdicao.personalizacoes)
+      ? itemEdicao.personalizacoes
+      : (typeof itemEdicao.personalizacoes === 'string'
+          ? (() => { try { return JSON.parse(itemEdicao.personalizacoes); } catch { return []; } })()
+          : []);
     const novoMapaPers = {};
     const nomesRestaurados = [];
     const idsRestaurados = [];
-    if (persJsonb.length > 0 && typeof persJsonb[0] === 'object' && personalizacoes.length > 0) {
+    if (persJsonb.length > 0 && personalizacoes.length > 0) {
       persJsonb.forEach(pSalvo => {
+        if (!pSalvo?.id) return;
         const cfg = personalizacoes.find(p => String(p.id) === String(pSalvo.id));
         if (!cfg) return;
-        const dep = cfg.dependencias_pers || {};
+        const dep = (typeof cfg.dependencias_pers === 'string')
+          ? (() => { try { return JSON.parse(cfg.dependencias_pers); } catch { return {}; } })()
+          : (cfg.dependencias_pers || {});
         novoMapaPers[cfg.id] = {
-          cores: dep.usa_cores ? pSalvo.cores : null,
-          posicoes: dep.usa_posicoes ? pSalvo.posicoes : null,
-          valor_variavel: dep.usa_valor_variavel ? pSalvo.valor : null,
+          cores: dep.usa_cores ? (pSalvo.cores ?? null) : null,
+          posicoes: dep.usa_posicoes ? (pSalvo.posicoes ?? null) : null,
+          valor_variavel: dep.usa_valor_variavel ? (pSalvo.valor_variavel ?? null) : null,
         };
         nomesRestaurados.push(cfg.tipo_personalizacao);
         idsRestaurados.push(cfg.id);
@@ -832,6 +840,18 @@ export default function ModalItemProduto({ open, onClose, onSalvar, empresaId, p
         ...(personalizacoesSelecionadas[id] || {}),
       })),
       personalizacoes_ids: form.personalizacoes_ids || [],
+      // JSONB correto para gravação direta no Supabase (sem passar pelo backend CRUD)
+      personalizacoes: (form.personalizacoes_ids || []).map(id => {
+        const cfg = personalizacoes.find(p => String(p.id) === String(id));
+        const inputs = personalizacoesSelecionadas[id] || {};
+        return {
+          id,
+          descricao: cfg?.tipo_personalizacao || '',
+          cores: inputs.cores ?? null,
+          posicoes: inputs.posicoes ?? null,
+          valor_variavel: inputs.valor_variavel ?? null,
+        };
+      }),
       itens_adicionais: itensAdicionaisJsonb,
       itens_adicionais_ids: form.itens_adicionais_ids || [],
       operacoes: form.operacoes,

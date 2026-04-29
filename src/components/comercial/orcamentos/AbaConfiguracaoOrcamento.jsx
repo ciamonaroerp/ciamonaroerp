@@ -99,11 +99,11 @@ export default function AbaConfiguracaoOrcamento({ orcamentoId, empresaId, garan
   const sanitizarPayload = (payload) => {
     const limpo = { ...payload };
     CAMPOS_FRONTEND.forEach(k => delete limpo[k]);
-    // Serializa arrays/objetos para JSON string apenas se a coluna for TEXT (não JSONB nativo)
-    // acabamentos e itens_adicionais são JSONB — passamos como array diretamente
-    ["personalizacoes", "operacoes"].forEach(k => {
-      if (limpo[k] !== undefined && typeof limpo[k] !== "string") {
-        limpo[k] = JSON.stringify(limpo[k]);
+    // Todas as colunas de array (acabamentos, personalizacoes, itens_adicionais, operacoes) são JSONB
+    // Passamos como array/objeto diretamente — sem serializar para string
+    ["acabamentos", "personalizacoes", "itens_adicionais", "operacoes"].forEach(k => {
+      if (limpo[k] !== undefined && typeof limpo[k] === "string") {
+        try { limpo[k] = JSON.parse(limpo[k]); } catch { /* mantém como está */ }
       }
     });
     return limpo;
